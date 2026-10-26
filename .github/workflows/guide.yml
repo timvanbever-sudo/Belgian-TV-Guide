@@ -33,7 +33,7 @@ jobs:
         run: node build-guide.mjs guide.xml guide.js vrtmax.json
       - name: Save guide.js
         run: 
-        git config user.name "guide-bot"
+          git config user.name "guide-bot"
           git config user.email "guide-bot@users.noreply.github.com"
           git add guide.js
           git diff --cached --quiet || (git commit -m "Update guide" && git push)
