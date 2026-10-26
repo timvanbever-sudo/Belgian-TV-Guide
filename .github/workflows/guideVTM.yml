@@ -23,14 +23,14 @@ jobs:
       - name: Collect guide data
         working-directory: epg
         run: npm run grab --- --channels=${{ github.workspace }}/channels.xml --output=${{ github.workspace }}/guide.xml --days=2 --maxConnections=2
-      - name: Collect VRT MAX (optional)
+      - name: Collect VTM GO (optional)
         continue-on-error: true
         env:
-          VRT_EMAIL: ${{ secrets.VRT_EMAIL }}
-          VRT_PASSWORD: ${{ secrets.VRT_PASSWORD }}
-        run: node collectors/vrtmax.mjs vrtmax.json
+          VTM_EMAIL: ${{ secrets.VTM_EMAIL }}
+          VTM_PASSWORD: ${{ secrets.VTM_PASSWORD }}
+        run: node collectors/vtmgo.mjs vtmgo.json
       - name: Build guide.js
-        run: node build-guide.mjs guide.xml guide.js vrtmax.json
+        run: node build-guide.mjs guide.xml guide.js vtmgo.json
       - name: Save guide.js
         run: |
           git config user.name "guide-bot"
