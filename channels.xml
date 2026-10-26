@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<channels>
+  <!-- VRT and VTM channels: guide via pickx.be -->
+  <channel site="pickx.be" site_id="UID50037" lang="nl" xmltv_id="vrt1">VRT 1</channel>
+  <channel site="pickx.be" site_id="UID50084" lang="nl" xmltv_id="canvas">Canvas</channel>
+  <channel site="pickx.be" site_id="UID50310" lang="nl" xmltv_id="ketnet">Ketnet</channel>
+  <channel site="pickx.be" site_id="UID50040" lang="nl" xmltv_id="vtm">VTM</channel>
+  <channel site="pickx.be" site_id="UID50044" lang="nl" xmltv_id="vtm2">VTM 2</channel>
+  <channel site="pickx.be" site_id="UID50082" lang="nl" xmltv_id="vtm3">VTM 3</channel>
+  <channel site="pickx.be" site_id="UID50301" lang="nl" xmltv_id="vtm4">VTM 4</channel>
+  <channel site="pickx.be" site_id="UID0313" lang="nl" xmltv_id="vtmgold">VTM Gold</channel>
+  <!-- Play channels: guide via play.tv -->
+  <channel site="play.tv" site_id="play" lang="nl" xmltv_id="play">Play</channel>
+  <channel site="play.tv" site_id="fictie" lang="nl" xmltv_id="playfictie">Play Fictie</channel>
+  <channel site="play.tv" site_id="actie" lang="nl" xmltv_id="playactie">Play Actie</channel>
+  <channel site="play.tv" site_id="reality" lang="nl" xmltv_id="playreality">Play Reality</channel>
+  <channel site="play.tv" site_id="crime" lang="nl" xmltv_id="playcrime">Play Crime</channel>
+</channels>
