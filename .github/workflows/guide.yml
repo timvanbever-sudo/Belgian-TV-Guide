@@ -1,0 +1,43 @@
+name: update-guide
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  guide:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: iptv-org/epg
+          path: epg
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the guide collector
+        working-directory: epg
+        run: npm install
+      - name: Collect guide data
+        working-directory: epg
+        run: npm run grab --- --channels=${{ github.workspace }}/channels.xml --output=${{ github.workspace }}/guide.xml --days=2 --maxConnections=2
+      - name: Collect VRT MAX (optional)
+        continue-on-error: true
+        env:
+          VRT_EMAIL: ${{ secrets.VRT_EMAIL }}
+          VRT_PASSWORD: ${{ secrets.VRT_PASSWORD }}
+        run: node collectors/vrtmax.mjs vrtmax.json
+      - name: Build guide.js
+        run: node build-guide.mjs guide.xml guide.js vrtmax.json
+      - name: Save guide.js
+        run: 
+        git config user.name "guide-bot"
+          git config user.email "guide-bot@users.noreply.github.com"
+          git add guide.js
+          git diff --cached --quiet || (git commit -m "Update guide" && git push)
+          git config user.name "guide-bot"
+          git config user.email "guide-bot@users.noreply.github.com"
+          git add guide.js
+          git diff --cached --quiet || (git commit -m "Update guide" && git push)
