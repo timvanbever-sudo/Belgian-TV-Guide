@@ -1,14 +1,14 @@
-// Collects the VRT 1, Canvas and Ketnet schedules from VRT MAX using your own free VRT account.
-// Usage: VRT_EMAIL=... VRT_PASSWORD=... node collectors/vrtmax.mjs vrtmax.json
+// Collects the VTM, VTM2, VTM3, VTM4, VTM Gold and VTM Xmas schedules from VTM GO using your own free VTM account.
+// Usage: VTM_EMAIL=... VTM_PASSWORD=... node collectors/vtmgo.mjs vtmgo.json
 // It only reads programme information (titles, times, descriptions, images). It never touches video streams.
 // Output is printed as a short, safe summary: no passwords, tokens or cookies are ever logged.
 import { writeFileSync } from 'node:fs'
 
-const WWW = process.env.VRT_WWW || 'https://www.vrt.be'
-const LOGIN = process.env.VRT_LOGIN || 'https://login.vrt.be'
+const WWW = process.env.VTM_WWW || 'https://www.vtmgo.be/vtmgo'
+const LOGIN = process.env.VTM_LOGIN || 'https://login.dpgmedia.be/identify?client_id=vtm-go-web'
 const UA = 'belgian-tv-guide/1.0 (personal use)'
-const CHANNELS = { vrt1: 'vrt1', canvas: 'vrt-canvas', ketnet: 'ketnet' } // our id -> VRT slug
-const out = process.argv[2] || 'vrtmax.json'
+const CHANNELS = { vtm: 'vtm', vtm2: 'vtm2', vtm3: 'vtm3', vtm4: 'vtm4', vtm_gold: 'vtm gold', vtm_xmas: 'vtm xmas' } // our id -> VTM slug
+const out = process.argv[2] || 'vtm.json'
 
 // ---- cookies and redirects -------------------------------------------------
 const jar = new Map()
@@ -34,17 +34,17 @@ const follow = async (url, headers = {}, max = 8) => {
   return res
 }
 
-// ---- sign in (same steps the VRT MAX website takes) ------------------------
+// ---- sign in (same steps the VTM GO website takes) ------------------------
 async function signIn () {
-  const email = process.env.VRT_EMAIL, password = process.env.VRT_PASSWORD
-  if (!email || !password) throw new Error('VRT_EMAIL and VRT_PASSWORD are not set')
-  await follow(WWW + '/vrtnu/sso/login?scope=openid,mid')
+  const email = process.env.VTM_EMAIL, password = process.env.VTM_PASSWORD
+  if (!email || !password) throw new Error('VTM_EMAIL and VTM_PASSWORD are not set')
+  await follow(WWW + '/vtmgo/sso/login?scope=openid,mid')
   const xsrf = jar.get('OIDCXSRF'), session = jar.get('SESSION')
   if (!xsrf || !session) throw new Error('sign-in start: expected cookies missing (saw: ' + [...jar.keys()].join(', ') + ')')
   const res = await hop(LOGIN + '/perform_login', {
     method: 'POST',
     headers: { 'content-type': 'application/json', OIDCXSRF: xsrf, cookie: 'SESSION=' + session + '; OIDCXSRF=' + xsrf },
-    body: JSON.stringify({ clientId: 'vrtnu-site', loginID: email, password })
+    body: JSON.stringify({ clientId: 'vtmgo-site', loginID: email, password })
   })
   const info = await res.json().catch(() => ({}))
   if (info.errorCode !== 0) throw new Error('sign-in refused: ' + (info.errorDetails || 'HTTP ' + res.status))
@@ -53,7 +53,7 @@ async function signIn () {
   const next = r.headers.get('location')
   if (!next) throw new Error('sign-in finish: no redirect after the credentials were accepted (HTTP ' + r.status + ')')
   await hop(new URL(next, info.redirectUrl).href, { headers: h })
-  const token = jar.get('vrtnu-site_profile_at')
+  const token = jar.get('vtmgo-site_profile_at')
   if (!token) throw new Error('sign-in finish: no access token received (saw: ' + [...jar.keys()].join(', ') + ')')
   return token
 }
@@ -73,9 +73,9 @@ const LIST_Q = `query TileList($listId: ID!, $lazyItemCount: Int = 20, $after: I
 } ${LIST} ${TILE}`
 
 async function gql (token, operationName, query, variables) {
-  const res = await fetch(WWW + '/vrtnu-api/graphql/v1', {
+  const res = await fetch(WWW + '/vtmgo-api/graphql/v1', {
     method: 'POST',
-    headers: { accept: 'application/json', 'content-type': 'application/json', authorization: 'Bearer ' + token, 'x-vrt-client-name': 'WEB', 'x-vrt-client-version': '1.5.15', 'user-agent': UA },
+    headers: { accept: 'application/json', 'content-type': 'application/json', authorization: 'Bearer ' + token, 'x-vtm-client-name': 'WEB', 'x-vtm-client-version': '1.5.15', 'user-agent': UA },
     body: JSON.stringify({ operationName, query, variables })
   })
   const j = await res.json().catch(() => null)
@@ -85,7 +85,7 @@ async function gql (token, operationName, query, variables) {
 }
 
 async function dayTiles (token, slug, date) {
-  const d = await gql(token, 'Page', PAGE_Q, { pageId: `/vrtmax/tv-gids/${slug}/${date}/`, lazyItemCount: 50, after: '' })
+  const d = await gql(token, 'Page', PAGE_Q, { pageId: `/vtmgo/tv-gids/${slug}/${date}/`, lazyItemCount: 50, after: '' })
   const page = d?.page || {}, tiles = []
   if (page.current?.tile) tiles.push(page.current.tile)
   for (const side of [page.previous, page.next]) {
@@ -164,7 +164,7 @@ function tidy (list) {
 const brusselsDate = ts => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Brussels' }).format(new Date(ts))
 try {
   const token = await signIn()
-  console.log('VRT sign-in: ok')
+  console.log('VTM sign-in: ok')
   const dates = [-1, 0, 1].map(o => brusselsDate(Date.now() + o * 86400000))
   const channels = {}
   for (const [id, slug] of Object.entries(CHANNELS)) {
@@ -184,8 +184,8 @@ try {
   const total = Object.values(channels).reduce((n, a) => n + a.length, 0)
   if (!total) throw new Error('signed in, but no programmes could be read')
   writeFileSync(out, JSON.stringify({ fetched: new Date().toISOString(), channels }))
-  console.log('VRT MAX: saved ' + total + ' programmes')
+  console.log('VTM GO: saved ' + total + ' programmes')
 } catch (e) {
-  console.error('VRT MAX collector failed: ' + e.message)
+  console.error('VTM GO collector failed: ' + e.message)
   process.exit(1)
 }
