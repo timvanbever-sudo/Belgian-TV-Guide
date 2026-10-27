@@ -1,22 +1,3 @@
-Claude
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Guide · YML
 name: update-guide
 on:
   schedule:
@@ -59,8 +40,3 @@ jobs:
           git config user.email "guide-bot@users.noreply.github.com"
           git add guide.js
           git diff --cached --quiet || (git commit -m "Update guide" && git push)
- 
-
-
-
-Claude finished the response
