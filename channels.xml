@@ -15,4 +15,10 @@
   <channel site="play.tv" site_id="actie" lang="nl" xmltv_id="playactie">Play Actie</channel>
   <channel site="play.tv" site_id="reality" lang="nl" xmltv_id="playreality">Play Reality</channel>
   <channel site="play.tv" site_id="crime" lang="nl" xmltv_id="playcrime">Play Crime</channel>
+  <!-- Second source for the VTM channels: guide via telenet.tv (used when pickx.be gives nothing) -->
+  <channel site="telenet.tv" site_id="vtmhd" lang="nl" xmltv_id="vtm.telenet">VTM</channel>
+  <channel site="telenet.tv" site_id="2behd" lang="nl" xmltv_id="vtm2.telenet">VTM 2</channel>
+  <channel site="telenet.tv" site_id="vitaya" lang="nl" xmltv_id="vtm3.telenet">VTM 3</channel>
+  <channel site="telenet.tv" site_id="acht" lang="nl" xmltv_id="vtm4.telenet">VTM 4</channel>
+  <channel site="telenet.tv" site_id="caz2" lang="nl" xmltv_id="vtmgold.telenet">VTM Gold</channel>
 </channels>
