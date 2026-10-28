@@ -83,20 +83,23 @@ dialog#vault::backdrop{background:rgba(0,0,0,.75)}
 .vcard h3{margin:8px 0 0;font-size:1rem}.vok{font-size:.72rem;font-weight:700;color:#1A1200;background:var(--accent);border-radius:3px;padding:1px 6px;margin-left:6px}
 .vfoot{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
 .vmsg{min-height:1.4em;color:var(--accent);font-size:.88rem;margin:10px 0 0}
+.iconbtn{background:transparent;border:0;padding:4px;color:#D9D9DB;line-height:0;border-radius:50%;cursor:pointer}
+.iconbtn svg{width:36px;height:36px;display:block}
+.iconbtn:hover,.iconbtn.unlocked{color:var(--accent)}
+@media(max-width:480px){.clock{font-size:1.6rem}.date{font-size:.62rem}.when{gap:6px}.brand{font-size:1.1rem;gap:8px}.iconbtn{padding:2px}.iconbtn svg{width:30px;height:30px}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div class="brand"><i></i>TV-GIDS</div>
-    <div class="when"><div class="clock" id="clock"></div><div class="date" id="date"></div></div>
+    <div class="when"><div class="clock" id="clock"></div><div class="date" id="date"></div><button id="vaultbtn" class="iconbtn" aria-label="Accounts" title="Accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10.5"/><circle cx="12" cy="9.6" r="3.6"/><path d="M5.3 19.3c1.5-3 3.9-4.6 6.7-4.6s5.2 1.6 6.7 4.6"/></svg></button></div>
   </header>
   <section class="detail" id="detail"></section>
   <div class="bar2">
     <input type="search" id="q" placeholder="Zoek een programma" aria-label="Zoek een programma">
     <div class="day"><button id="dprev" aria-label="Vorige dag">‹</button><span id="dlabel"></span><button id="dnext" aria-label="Volgende dag">›</button></div>
     <button id="nowbtn">Nu</button>
-    <button id="vaultbtn">Accounts</button>
     <a class="btn" target="_blank" rel="noopener noreferrer" href="https://www.netflix.com/be/">Netflix</a>
   </div>
   <div class="bar2" id="chips" role="group" aria-label="Filter op dienst"></div>

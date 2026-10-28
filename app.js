@@ -83,7 +83,7 @@
       + '<div class="prog"><span>' + hm(s.s) + '</span><span class="bar"><i style="width:' + pct + '%"></i></span><span>' + hm(s.e) + '</span></div>'
       + '<div class="acts"><a class="btn go" target="_blank" rel="noopener noreferrer" href="' + esc(link(c)) + '">' + (on ? 'Kijk live' : 'Open zender') + '</a>'
       + (safeUrl(s.u) ? '<a class="btn" target="_blank" rel="noopener noreferrer" href="' + esc(safeUrl(s.u)) + '">Kijk online</a>' : '')
-      + '<button data-act="popup" data-id="' + c.id + '">Pop-up</button><button data-act="edit" data-id="' + c.id + '">Link wijzigen</button><button data-act="vault" data-id="' + c.prov + '">Inloggegevens</button></div></div>'
+      + '<button data-act="popup" data-id="' + c.id + '">Pop-up</button><button data-act="edit" data-id="' + c.id + '">Link wijzigen</button></div></div>'
       + (safeUrl(s.i) ? '<div class="thumb pic"><img class="pic" src="' + esc(safeUrl(s.i)) + '" alt="" referrerpolicy="no-referrer"></div>' : '<div class="thumb">' + logo(c) + '</div>');
     fixLogos(el);
     var pic = el.querySelector('img.pic');
@@ -178,7 +178,7 @@
     else if(ds.tab){ st.tab = ds.tab; render(); }
     else if(el.id === 'dprev'){ st.day--; st.recenter = true; render(); }
     else if(el.id === 'dnext'){ st.day++; st.recenter = true; render(); }
-    else if(el.id === 'vaultbtn'){ openVault(); }
+    else if(el.id === 'vaultbtn'){ var sl0 = findSel(); openVault(sl0 ? sl0.c.prov : null); }
     else if(el.id === 'nowbtn'){ st.day = 0; st.tab = 'guide'; st.recenter = true; st.sel = null; render(); }
     else if(ds.act){
       if(ds.act === 'vault'){ openVault(ds.id); return; }
@@ -242,10 +242,13 @@
       return unseal(key, rec).then(function(data){ vault.key = key; vault.data = data; vault.rec = rec; });
     });
   }
-  function lockVault(){ vault.key = null; vault.data = null; vault.changing = false; clearTimeout(vault.timer); if($('vault').open) renderVault(); }
-  function touchVault(){ clearTimeout(vault.timer); if(vault.key) vault.timer = setTimeout(lockVault, 3 * 60 * 1000); }
+  function lockVault(){ vault.key = null; vault.data = null; vault.changing = false; clearTimeout(vault.timer); syncVaultIcon(); if($('vault').open) renderVault(); }
+  function touchVault(){ clearTimeout(vault.timer); if(vault.key) vault.timer = setTimeout(lockVault, 5 * 60 * 1000); }
+
+  function syncVaultIcon(){ var b = $('vaultbtn'); b.classList.toggle('unlocked', !!vault.key); b.setAttribute('title', vault.key ? 'Accounts (ontgrendeld)' : 'Accounts'); }
 
   function renderVault(){
+    syncVaultIcon();
     var box = $('vaultbox'), rec = loadRec();
     var head = '<div class="vhead"><h2>Accounts</h2><button data-v="close">Sluiten</button></div>', foot = '<p class="vmsg" id="vmsg" role="status"></p>';
     if(!(window.crypto && crypto.subtle)){ box.innerHTML = head + '<p class="vnote">Versleutelen werkt alleen op een beveiligde pagina. Open de app via het https://-adres (GitHub Pages) of via localhost.</p>'; return; }
@@ -261,7 +264,7 @@
         + '<div class="acts"><button class="btn go" data-v="unlock">Ontgrendel</button><button data-v="wipe">Kluis wissen</button></div>' + foot;
       return;
     }
-    var h = head + '<p class="vnote">De app logt niet voor je in. Kopieer je gegevens en plak ze op de site van de aanbieder. De kluis vergrendelt zichzelf na 3 minuten zonder activiteit.</p>';
+    var h = head + '<p class="vnote">De app logt niet voor je in. Kopieer je gegevens en plak ze op de site van de aanbieder. De kluis vergrendelt zichzelf na 5 minuten. Tip: na één keer inloggen onthouden de sites je sessie, en je browser of telefoon kan de login ook zelf invullen.</p>';
     PROVIDERS.forEach(function(p){
       var e = vault.data[p.id] || {};
       h += '<section class="vcard" data-p="' + p.id + '"><h3>' + esc(p.name) + (e.u || e.p ? ' <span class="vok">opgeslagen</span>' : '') + '</h3>'
@@ -269,7 +272,7 @@
         + '<label>Wachtwoord<span class="pw"><input type="password" id="vw-' + p.id + '" value="' + esc(e.p || '') + '" autocomplete="off"><button data-v="show" data-p="' + p.id + '">Toon</button></span></label>'
         + '<div class="acts"><button class="btn go" data-v="save" data-p="' + p.id + '">Opslaan</button>'
         + '<button data-v="copyu" data-p="' + p.id + '">Kopieer gebruikersnaam</button><button data-v="copyw" data-p="' + p.id + '">Kopieer wachtwoord</button>'
-        + '<a class="btn" target="_blank" rel="noopener noreferrer" href="' + p.login + '">Open aanmelding</a><button data-v="del" data-p="' + p.id + '">Verwijderen</button></div></section>';
+        + '<button data-v="open" data-p="' + p.id + '">Open aanmelding</button><button data-v="del" data-p="' + p.id + '">Verwijderen</button></div></section>';
     });
     h += '<div class="acts vfoot"><button data-v="lock">Nu vergrendelen</button><button data-v="change">Hoofdwachtwoord wijzigen</button><button data-v="wipe">Kluis wissen</button></div>';
     if(vault.changing) h += '<div class="vcard"><label>Nieuw hoofdwachtwoord (minstens 10 tekens)<input type="password" id="vp1" autocomplete="new-password"></label>'
@@ -332,6 +335,11 @@
       if(!u && !w) delete vault.data[id]; else vault.data[id] = {u:u, p:w};
       persist().then(function(){ msg('Opgeslagen.'); }, function(){ msg('Opslaan is niet gelukt.'); });
     }
+    else if(v === 'open'){
+      var pp = PROVIDERS.filter(function(x){ return x.id === id; })[0], uu = $('vu-' + id).value;
+      if(uu) copyText(uu, 'Gebruikersnaam'); else msg('Aanmeldpagina geopend. Sla eerst je gegevens op om ze te kunnen kopiëren.');
+      window.open(pp.login, '_blank', 'noopener');
+    }
     else if(v === 'show'){ var inp = $('vw-' + id); inp.type = inp.type === 'password' ? 'text' : 'password'; b.textContent = inp.type === 'password' ? 'Toon' : 'Verberg'; }
     else if(v === 'copyu'){ copyText($('vu-' + id).value, 'Gebruikersnaam'); }
     else if(v === 'copyw'){ copyText($('vw-' + id).value, 'Wachtwoord'); }
@@ -359,7 +367,7 @@
   $('vaultbox').addEventListener('input', touchVault);
   $('vault').addEventListener('close', function(){ $('vaultbox').innerHTML = ''; vault.focus = null; });
   document.addEventListener('visibilitychange', function(){
-    if(document.hidden && vault.key){ vault.hideTimer = setTimeout(lockVault, 60000); } else { clearTimeout(vault.hideTimer); }
+    if(document.hidden && vault.key){ vault.hideTimer = setTimeout(lockVault, 5 * 60 * 1000); } else { clearTimeout(vault.hideTimer); }
   });
 
   render();
