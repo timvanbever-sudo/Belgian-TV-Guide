@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
 <title>Belgian TV guide</title>
 <meta name="theme-color" content="#0C0C0D">
 <link rel="manifest" href="manifest.webmanifest">
@@ -71,6 +72,17 @@ input[type=search]{flex:1 1 150px;min-width:0;font:inherit;color:var(--ink);back
 .item:last-child{border-bottom:0}.item .ttl{flex:1;font-weight:600}.item .t{color:var(--muted);font-weight:400;font-size:.8rem}
 .tag{font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:3px;background:var(--cell2)}
 .empty{padding:20px 4px;color:var(--muted)}
+dialog#vault{background:#17171A;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:16px;width:min(560px,94vw);max-height:88vh;overflow:auto}
+dialog#vault::backdrop{background:rgba(0,0,0,.75)}
+.vhead{display:flex;justify-content:space-between;align-items:center;gap:10px}.vhead h2{margin:0;font-size:1.2rem;color:var(--accent)}
+.vnote{color:var(--muted);font-size:.88rem;margin:10px 0 0}
+#vaultbox label{display:block;margin-top:10px;font-size:.85rem;color:var(--muted)}
+#vaultbox input{display:block;width:100%;margin-top:4px;font:inherit;color:var(--ink);background:var(--cell);border:1px solid var(--line);border-radius:4px;padding:8px 10px}
+.pw{display:flex;gap:6px;align-items:center;margin-top:4px}.pw input{flex:1;margin-top:0!important}
+.vcard{border-top:1px solid var(--line);margin-top:14px;padding-top:6px}.vcard.focus{border-top:2px solid var(--accent)}
+.vcard h3{margin:8px 0 0;font-size:1rem}.vok{font-size:.72rem;font-weight:700;color:#1A1200;background:var(--accent);border-radius:3px;padding:1px 6px;margin-left:6px}
+.vfoot{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
+.vmsg{min-height:1.4em;color:var(--accent);font-size:.88rem;margin:10px 0 0}
 </style>
 </head>
 <body>
@@ -84,6 +96,7 @@ input[type=search]{flex:1 1 150px;min-width:0;font:inherit;color:var(--ink);back
     <input type="search" id="q" placeholder="Zoek een programma" aria-label="Zoek een programma">
     <div class="day"><button id="dprev" aria-label="Vorige dag">‹</button><span id="dlabel"></span><button id="dnext" aria-label="Volgende dag">›</button></div>
     <button id="nowbtn">Nu</button>
+    <button id="vaultbtn">Accounts</button>
     <a class="btn" target="_blank" rel="noopener noreferrer" href="https://www.netflix.com/be/">Netflix</a>
   </div>
   <div class="bar2" id="chips" role="group" aria-label="Filter op dienst"></div>
@@ -91,211 +104,7 @@ input[type=search]{flex:1 1 150px;min-width:0;font:inherit;color:var(--ink);back
   <div id="view"></div>
 </div>
 
-<script>
-(function(){
-  var PROV = {
-    vrt:{name:'VRT MAX', titles:[['Ochtendnieuws',30],['Tuinprogramma',45],['Documentaire',60],['Kookprogramma',45],['Quiz',30],['Dramaserie',50],['Avondnieuws',30],['Sportoverzicht',60],['Film',100]]},
-    dpg:{name:'VTM GO', titles:[['Ontbijtshow',45],['Soap',30],['Praatprogramma',60],['Realityreeks',60],['Avondnieuws',30],['Amusement',75],['Misdaadreeks',55],['Film',110]]},
-    play:{name:'Play', titles:[['Lifestyle',45],['Verbouwprogramma',60],['True crime',55],['Quiz',45],['Realityreeks',60],['Comedy',30],['Film',105]]}
-  };
-  var V = 'https://www.vrt.be/vrtmax/livestream/video/', G = 'https://www.vtmgo.be/vtmgo/live-kijken/', P = 'https://www.play.tv/live-kijken/';
-  var CHANNELS = [
-    {id:'vrt1', name:'VRT 1', prov:'vrt', url:V+'vrt1/'},
-    {id:'canvas', name:'Canvas', prov:'vrt', url:V+'vrt-canvas/'},
-    {id:'ketnet', name:'Ketnet', prov:'vrt', url:V+'ketnet/'},
-    {id:'vtm', name:'VTM', prov:'dpg', url:G+'vtm'},
-    {id:'vtm2', name:'VTM 2', prov:'dpg', url:G+'vtm2'},
-    {id:'vtm3', name:'VTM 3', prov:'dpg', url:G+'vtm3'},
-    {id:'vtm4', name:'VTM 4', prov:'dpg', url:G+'vtm4'},
-    {id:'vtmgold', name:'VTM Gold', prov:'dpg', url:G+'vtm-gold'},
-    {id:'vtmxmas', name:'VTM Xmas', prov:'dpg', url:G+'vtm-xmas'},
-    {id:'play', name:'Play', prov:'play', url:P+'play'},
-    {id:'playfictie', name:'Play Fictie', prov:'play', url:P+'play-fictie', titles:[['Dramaserie',50],['Film',100],['Miniserie',55]]},
-    {id:'playactie', name:'Play Actie', prov:'play', url:P+'play-actie', titles:[['Actiefilm',105],['Thrillerreeks',50]]},
-    {id:'playreality', name:'Play Reality', prov:'play', url:P+'play-reality', titles:[['Realityreeks',60],['Datingshow',45],['Make-over',50]]},
-    {id:'playcrime', name:'Play Crime', prov:'play', url:P+'play-crime', titles:[['True crime',55],['Misdaadreeks',50],['Cold case',60]]}
-  ];
-  var KEY = 'betv-links-v1', custom = {}, guide = null, failed = false;
-  try{ custom = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; }catch(e){}
-  var st = {tab:'guide', prov:'all', day:0, q:'', sel:null, scrollX:null, recenter:true};
-  var $ = function(id){ return document.getElementById(id); };
-
-  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-  function hm(ts){ var d = new Date(ts * 1000); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
-  function nowSec(){ return Math.floor(Date.now() / 1000); }
-  function link(c){ return custom[c.id] || c.url; }
-  function chById(id){ return CHANNELS.filter(function(c){ return c.id === id; })[0]; }
-  function visible(){ return CHANNELS.filter(function(c){ return st.prov === 'all' || c.prov === st.prov; }); }
-  function bounds(off){ var d = new Date(), y = d.getFullYear(), m = d.getMonth(), n = d.getDate();
-    return [Math.floor(new Date(y, m, n + off) / 1000), Math.floor(new Date(y, m, n + off + 1) / 1000)]; }
-  function ppm(){ return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ppm')) || 4; }
-
-  function sample(c){
-    var base = bounds(0)[0], idx = CHANNELS.indexOf(c), list = c.titles || PROV[c.prov].titles, t = -((idx * 17) % 45), i = idx * 2, out = [];
-    while(t < 3000){ var x = list[i % list.length]; out.push({t:x[0], s:base + t*60, e:base + (t + x[1])*60}); t += x[1]; i++; }
-    return out;
-  }
-  function slotsFor(c){
-    var real = guide && guide.channels && guide.channels[c.id];
-    if(real && real.length) return real;
-    if(guide && guide.updated) return [];
-    return c._sample || (c._sample = sample(c));
-  }
-  function pos(sl, n){
-    var cur = -1, nxt = -1;
-    for(var k = 0; k < sl.length; k++){ if(sl[k].s <= n && n < sl[k].e) cur = k; else if(sl[k].s > n && nxt < 0) nxt = k; }
-    return {cur:cur, nxt:nxt};
-  }
-  function maxDay(){
-    if(!(guide && guide.updated)) return 1;
-    var last = 0; CHANNELS.forEach(function(c){ var a = guide.channels[c.id]; if(a && a.length) last = Math.max(last, a[a.length-1].e); });
-    return Math.max(0, Math.min(6, Math.floor((last - 1 - bounds(0)[0]) / 86400)));
-  }
-  function findSel(){
-    if(st.sel){ var c = chById(st.sel.ch); if(c && visible().indexOf(c) >= 0){ var sl = slotsFor(c); for(var k = 0; k < sl.length; k++) if(sl[k].s === st.sel.s) return {c:c, s:sl[k]}; } }
-    var n = nowSec(), vis = visible();
-    for(var i = 0; i < vis.length; i++){ var s2 = slotsFor(vis[i]), p = pos(s2, n); if(p.cur >= 0) return {c:vis[i], s:s2[p.cur]}; }
-    return null;
-  }
-  function logo(c, cls){ return '<img class="logo" src="logos/' + c.id + '.png" alt="' + esc(c.name) + '">'; }
-  function fixLogos(root){
-    Array.prototype.forEach.call(root.querySelectorAll('img.logo'), function(img){
-      img.addEventListener('error', function(){
-        var p = this.parentNode; p.classList.add('nologo');
-        if(p.classList.contains('thumb')) p.textContent = this.alt; else this.remove();
-      });
-    });
-  }
-
-  function detail(){
-    var sel = findSel(), n = nowSec(), el = $('detail');
-    if(!sel){ el.innerHTML = '<div><div class="d-title">Niets om te tonen</div><div class="d-desc">Kies een programma in de gids.</div></div><div class="thumb"></div>'; return; }
-    var s = sel.s, c = sel.c, on = s.s <= n && n < s.e, pct = on ? Math.round((n - s.s) / (s.e - s.s) * 100) : 0;
-    var sub = [s.g, s.st].filter(Boolean).join(' – ') || (PROV[c.prov].name + ' · ' + c.name);
-    el.innerHTML = '<div><div class="d-title">' + esc(s.t) + '</div><div class="d-sub">' + esc(sub) + '</div><div class="d-desc">' + esc(s.d || '') + '</div>'
-      + '<div class="prog"><span>' + hm(s.s) + '</span><span class="bar"><i style="width:' + pct + '%"></i></span><span>' + hm(s.e) + '</span></div>'
-      + '<div class="acts"><a class="btn go" target="_blank" rel="noopener noreferrer" href="' + esc(link(c)) + '">' + (on ? 'Kijk live' : 'Open zender') + '</a>'
-      + (s.u ? '<a class="btn" target="_blank" rel="noopener noreferrer" href="' + esc(s.u) + '">Kijk online</a>' : '')
-      + '<button data-act="popup" data-id="' + c.id + '">Pop-up</button><button data-act="edit" data-id="' + c.id + '">Link wijzigen</button></div></div>'
-      + (s.i ? '<div class="thumb pic"><img class="pic" src="' + esc(s.i) + '" alt="" referrerpolicy="no-referrer"></div>' : '<div class="thumb">' + logo(c) + '</div>');
-    fixLogos(el);
-    var pic = el.querySelector('img.pic');
-    if(pic) pic.addEventListener('error', function(){ var t = pic.parentNode; t.className = 'thumb'; t.innerHTML = logo(c); fixLogos(t); });
-  }
-
-  function gridView(){
-    var n = nowSec(), b = bounds(st.day), ds = b[0], de = b[1], mins = (de - ds) / 60, k = ppm(), sel = findSel();
-    var left = '<div class="axspace"></div>', rows = '', axis = '';
-    for(var t = 0; t < mins; t += 15) axis += '<div class="tick" style="left:' + (t * k) + 'px">' + hm(ds + t * 60) + '</div>';
-    visible().forEach(function(c){
-      var num = String(CHANNELS.indexOf(c) + 1).padStart(3, '0'), blocks = '', sl = slotsFor(c), any = false;
-      sl.forEach(function(s){
-        if(s.e <= ds || s.s >= de) return;
-        var x = (Math.max(s.s, ds) - ds) / 60 * k, w = (Math.min(s.e, de) - Math.max(s.s, ds)) / 60 * k - 2;
-        if(w < 4) return;
-        any = true;
-        blocks += '<button class="blk' + (s.e <= n ? ' past' : '') + (s.s <= n && n < s.e ? ' on' : '') + (sel && sel.s === s ? ' sel' : '')
-          + '" style="left:' + x + 'px;width:' + w + 'px" data-ch="' + c.id + '" data-s="' + s.s + '" title="' + esc(s.t) + '">' + esc(s.t) + '</button>';
-      });
-      left += '<div class="chl' + (sel && sel.c === c ? ' sel' : '') + '" data-ch="' + c.id + '"><span class="num">' + num + '</span>' + logo(c) + '<span class="cname">' + esc(c.name) + '</span></div>';
-      rows += '<div class="rowx">' + (any ? blocks : '<span class="nod">Geen gidsgegevens</span>') + '</div>';
-    });
-    var nowLine = (st.day === 0 && n >= ds && n < de) ? '<div class="now" style="left:' + ((n - ds) / 60 * k - 1) + 'px"></div>' : '';
-    $('view').innerHTML = '<div class="grid"><div class="chcol">' + left + '</div><div class="scroller" id="sc"><div class="inner" style="width:' + Math.round(mins * k) + 'px"><div class="axis">' + axis + '</div>' + rows + nowLine + '</div></div></div>';
-    fixLogos($('view'));
-    var sc = $('sc');
-    if(st.recenter || st.scrollX == null){ sc.scrollLeft = Math.max(0, st.day === 0 ? (n - ds) / 60 * k - sc.clientWidth * 0.25 : 18 * 60 * k - sc.clientWidth * 0.1); st.recenter = false; st.scrollX = sc.scrollLeft; }
-    else sc.scrollLeft = st.scrollX;
-    sc.addEventListener('scroll', function(){ st.scrollX = sc.scrollLeft; }, {passive:true});
-  }
-
-  function libraryView(){
-    var n = nowSec(), seen = {}, items = [], q = st.q.trim().toLowerCase();
-    visible().forEach(function(c){
-      slotsFor(c).forEach(function(s){
-        var key = c.id + '|' + s.t;
-        if(s.e <= n || seen[key] || (q && (s.t + ' ' + c.name).toLowerCase().indexOf(q) < 0)) return;
-        seen[key] = 1; items.push({s:s, c:c});
-      });
-    });
-    if(!items.length){ $('view').innerHTML = '<p class="empty">Geen programma\'s gevonden.</p>'; return; }
-    var out = '<div class="lib">';
-    items.slice(0, 250).forEach(function(i){
-      out += '<div class="item">' + (i.s.i ? '<img class="th" src="' + esc(i.s.i) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') + '<span class="ttl">' + esc(i.s.t) + ' <span class="t">' + (i.s.s <= n ? 'nu bezig' : hm(i.s.s)) + '</span></span><span class="tag">' + esc(i.c.name) + '</span>'
-        + '<a class="btn" target="_blank" rel="noopener noreferrer" href="' + esc(i.s.u || link(i.c)) + '">' + (i.s.u ? 'Kijk online' : 'Open live') + '</a></div>';
-    });
-    $('view').innerHTML = out + '</div>';
-    Array.prototype.forEach.call($('view').querySelectorAll('img.th'), function(im){ im.addEventListener('error', function(){ im.remove(); }); });
-  }
-
-  function render(){
-    var d = new Date(), n = nowSec(), md = maxDay();
-    $('clock').textContent = hm(n);
-    $('date').innerHTML = esc(d.toLocaleDateString('nl-BE', {weekday:'long'})) + '<br>' + esc(d.toLocaleDateString('nl-BE', {day:'numeric', month:'long'}));
-    if(st.day > md) st.day = md;
-    var dd = new Date(bounds(st.day)[0] * 1000);
-    $('dlabel').textContent = st.day === 0 ? 'Vandaag' : st.day === 1 ? 'Morgen' : dd.toLocaleDateString('nl-BE', {weekday:'short', day:'numeric', month:'short'});
-    $('dprev').disabled = st.day <= 0; $('dnext').disabled = st.day >= md;
-    var nt = $('notice');
-    if(guide && guide.updated){
-      var age = (Date.now() - new Date(guide.updated).getTime()) / 36e5;
-      nt.textContent = 'Gids bijgewerkt op ' + new Date(guide.updated).toLocaleString('nl-BE', {weekday:'short', hour:'2-digit', minute:'2-digit'}) + (age > 30 ? '. Dat is meer dan een dag geleden, de gidstaak is mogelijk gestopt.' : '.');
-    } else if(guide){ nt.textContent = 'Voorbeeldgegevens. De echte programma\'s verschijnen zodra de gidstaak voor het eerst gelopen heeft.'; }
-    else if(failed){ nt.textContent = 'Voorbeeldgegevens. guide.js kon niet geladen worden; controleer of het naast index.html staat.'; }
-    var h = '', opts = [['all','Alle']].concat(Object.keys(PROV).map(function(x){ return [x, PROV[x].name]; }));
-    opts.forEach(function(o){ h += '<button data-prov="' + o[0] + '" aria-pressed="' + (st.prov === o[0]) + '">' + o[1] + '</button>'; });
-    h += '<button data-tab="guide" aria-pressed="' + (st.tab === 'guide') + '">Gids</button><button data-tab="lib" aria-pressed="' + (st.tab === 'lib') + '">Bibliotheek</button>';
-    $('chips').innerHTML = h;
-    detail();
-    if(st.tab === 'guide') gridView(); else libraryView();
-  }
-
-  function loadGuide(){
-    var s = document.createElement('script');
-    s.src = 'guide.js?t=' + Date.now();
-    s.onload = function(){ if(window.BETV_GUIDE){ guide = window.BETV_GUIDE; failed = false; render(); } s.remove(); };
-    s.onerror = function(){ failed = true; render(); s.remove(); };
-    document.head.appendChild(s);
-  }
-
-  document.addEventListener('click', function(e){
-    var el = e.target.closest('button, .chl'); if(!el) return;
-    var ds = el.dataset;
-    if(el.classList.contains('blk')){ st.sel = {ch:ds.ch, s:+ds.s}; render(); }
-    else if(el.classList.contains('chl')){
-      var c = chById(ds.ch), sl = slotsFor(c), p = pos(sl, nowSec()), i = p.cur >= 0 ? p.cur : p.nxt;
-      if(i >= 0){ st.sel = {ch:c.id, s:sl[i].s}; render(); }
-    }
-    else if(ds.prov){ st.prov = ds.prov; render(); }
-    else if(ds.tab){ st.tab = ds.tab; render(); }
-    else if(el.id === 'dprev'){ st.day--; st.recenter = true; render(); }
-    else if(el.id === 'dnext'){ st.day++; st.recenter = true; render(); }
-    else if(el.id === 'nowbtn'){ st.day = 0; st.tab = 'guide'; st.recenter = true; st.sel = null; render(); }
-    else if(ds.act){
-      var ch = chById(ds.id);
-      if(ds.act === 'popup'){
-        var w = null;
-        try{ w = window.open(link(ch), 'betv_popup', 'popup=yes,width=1100,height=700'); }catch(err){}
-        if(!w) window.open(link(ch), '_blank', 'noopener');
-      } else {
-        var v = prompt('Live link voor ' + ch.name + ' (laat leeg om te herstellen)', link(ch));
-        if(v === null) return;
-        v = v.trim();
-        if(!v){ delete custom[ch.id]; }
-        else { try{ var u = new URL(v); if(u.protocol === 'https:' || u.protocol === 'http:'){ custom[ch.id] = u.href; } else { alert('Gebruik een https://-adres.'); return; } }catch(err){ alert('Dat is geen geldig adres.'); return; } }
-        try{ localStorage.setItem(KEY, JSON.stringify(custom)); }catch(err){}
-        render();
-      }
-    }
-  });
-  $('q').addEventListener('input', function(){ st.q = this.value; st.tab = st.q.trim() ? 'lib' : 'guide'; if(st.tab === 'guide') st.recenter = false; render(); });
-
-  render();
-  loadGuide();
-  setInterval(function(){ if(document.activeElement !== $('q')) render(); }, 30000);
-  setInterval(loadGuide, 30 * 60 * 1000);
-  if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
-})();
-</script>
+<dialog id="vault" aria-label="Accounts"><div id="vaultbox"></div></dialog>
+<script src="app.js"></script>
 </body>
 </html>
