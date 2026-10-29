@@ -24,16 +24,6 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .when{display:flex;align-items:center;gap:10px}
 .clock{font-size:2rem;font-weight:700;color:#D9D9DB;line-height:1}
 .date{font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1.2;color:#CFCFD2}
-.detail{display:grid;grid-template-columns:1fr auto;gap:14px;padding:14px 0 8px}
-.d-title{font-size:1.45rem;font-weight:800;color:var(--accent);line-height:1.15}
-.d-sub{font-weight:700;margin-top:2px}
-.d-desc{color:var(--muted);margin-top:2px;min-height:2.8em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.prog{display:flex;align-items:center;gap:8px;margin-top:8px;max-width:420px;font-size:.85rem;font-weight:700;color:#D6D6D8}
-.prog .bar{flex:1;height:7px;background:#5A5A5E}.prog .bar i{display:block;height:100%;background:var(--accent)}
-.thumb{width:120px;height:80px;background:linear-gradient(160deg,#3B3B40,#18181A);border:1px solid #555;display:flex;align-items:center;justify-content:center;padding:10px;text-align:center;font-weight:800}
-.thumb img{max-width:100%;max-height:100%;object-fit:contain}
-@media(min-width:760px){.thumb{width:230px;height:140px}}
-.thumb.pic{padding:0}.thumb.pic img{max-width:none;max-height:none;width:100%;height:100%;object-fit:cover}
 .th{width:64px;height:40px;object-fit:cover;border-radius:3px;background:#333;flex:none}
 .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .btn,button{font:inherit;font-size:.9rem;font-weight:600;color:var(--ink);background:var(--cell);border:1px solid var(--line);padding:7px 14px;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block}
@@ -87,6 +77,34 @@ dialog#vault::backdrop{background:rgba(0,0,0,.75)}
 .iconbtn svg{width:36px;height:36px;display:block}
 .iconbtn:hover,.iconbtn.unlocked{color:var(--accent)}
 @media(max-width:480px){.clock{font-size:1.6rem}.date{font-size:.62rem}.when{gap:6px}.brand{font-size:1.1rem;gap:8px}.iconbtn{padding:2px}.iconbtn svg{width:30px;height:30px}}
+.item{cursor:pointer}
+html.noscroll{overflow:hidden}
+.pop{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;visibility:hidden;pointer-events:none}
+.pop.show{visibility:visible;pointer-events:auto}
+.pop-bg{position:absolute;inset:0;background:rgba(8,8,10,0);-webkit-backdrop-filter:blur(0);backdrop-filter:blur(0);transition:background .24s ease,backdrop-filter .24s ease,-webkit-backdrop-filter .24s ease}
+.pop.open .pop-bg{background:rgba(8,8,10,.74);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.pop-card{position:relative;width:min(420px,100%);max-height:100%;overflow:auto;background:#1B1B1E;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.55);opacity:0;transform:scale(.92) translateY(10px);transition:opacity .2s ease,transform .24s cubic-bezier(.2,.8,.2,1)}
+.pop.open .pop-card{opacity:1;transform:none}
+.pop-hero{position:relative;height:210px;background:#111113;overflow:hidden}
+.pop-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,rgba(27,27,30,.05) 0%,rgba(27,27,30,.4) 50%,#1B1B1E 100%)}
+.pop-hero img.pic{width:100%;height:100%;object-fit:cover;display:block}
+.nopic{height:100%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.4rem;padding-bottom:40px}.nopic img{max-height:80px;max-width:55%;object-fit:contain}
+.pop-x{position:absolute;top:12px;right:12px;z-index:2;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:rgba(40,40,46,.88);color:#fff;display:grid;place-items:center;cursor:pointer}
+.pop-x svg{width:20px;height:20px}.pop-x:hover{background:rgba(70,70,78,.95)}
+.pop-body{position:relative;z-index:1;margin-top:-86px;padding:0 20px 20px}
+.pop-when{font-weight:700;font-size:.95rem}
+.pop-title{margin:6px 0 0;font-size:1.55rem;line-height:1.15;font-weight:800;color:#fff}
+.pop-meta{margin-top:8px;font-size:.88rem;color:var(--muted)}.dot{margin:0 2px}
+.pop-sub{margin-top:14px;font-weight:700;font-size:1.02rem}
+.pop-bar{height:6px;background:#55555C;border-radius:3px;margin-top:10px}.pop-bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.pop-desc{margin:14px 0 0;color:#E6E6E9;line-height:1.5}
+.pbtn{display:flex;align-items:center;justify-content:center;gap:10px;height:50px;padding:0 12px;border:0;border-radius:999px;background:#43434A;color:#fff;font:inherit;font-weight:800;font-size:.98rem;text-decoration:none;cursor:pointer;white-space:nowrap}
+.pbtn svg{width:22px;height:22px;flex:none}.pbtn:hover{background:#55555D;border:0}
+.pbtn.go{width:100%;margin-top:18px;background:#fff;color:#111}.pbtn.go:hover{background:#E6E6E8}
+.prow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+@media(max-width:420px){.prow{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.pbtn{padding:0 8px;gap:6px;font-size:.86rem}.pbtn svg{width:20px;height:20px}}
+@media(max-width:389px){.prow{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.pop-bg,.pop-card{transition:none}}
 </style>
 </head>
 <body>
@@ -95,7 +113,6 @@ dialog#vault::backdrop{background:rgba(0,0,0,.75)}
     <div class="brand"><i></i>TV-GIDS</div>
     <div class="when"><div class="clock" id="clock"></div><div class="date" id="date"></div><button id="vaultbtn" class="iconbtn" aria-label="Accounts" title="Accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10.5"/><circle cx="12" cy="9.6" r="3.6"/><path d="M5.3 19.3c1.5-3 3.9-4.6 6.7-4.6s5.2 1.6 6.7 4.6"/></svg></button></div>
   </header>
-  <section class="detail" id="detail"></section>
   <div class="bar2">
     <input type="search" id="q" placeholder="Zoek een programma" aria-label="Zoek een programma">
     <div class="day"><button id="dprev" aria-label="Vorige dag">‹</button><span id="dlabel"></span><button id="dnext" aria-label="Volgende dag">›</button></div>
@@ -107,6 +124,7 @@ dialog#vault::backdrop{background:rgba(0,0,0,.75)}
   <div id="view"></div>
 </div>
 
+<div class="pop" id="pop"><div class="pop-bg"></div><div class="pop-card" id="popcard" role="dialog" aria-modal="true" aria-labelledby="pop-title"></div></div>
 <dialog id="vault" aria-label="Accounts"><div id="vaultbox"></div></dialog>
 <script src="app.js"></script>
 </body>

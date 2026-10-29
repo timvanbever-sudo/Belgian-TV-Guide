@@ -59,9 +59,10 @@
     return Math.max(0, Math.min(6, Math.floor((last - 1 - bounds(0)[0]) / 86400)));
   }
   function findSel(){
-    if(st.sel){ var c = chById(st.sel.ch); if(c && visible().indexOf(c) >= 0){ var sl = slotsFor(c); for(var k = 0; k < sl.length; k++) if(sl[k].s === st.sel.s) return {c:c, s:sl[k]}; } }
-    var n = nowSec(), vis = visible();
-    for(var i = 0; i < vis.length; i++){ var s2 = slotsFor(vis[i]), p = pos(s2, n); if(p.cur >= 0) return {c:vis[i], s:s2[p.cur]}; }
+    if(!st.sel) return null;
+    var c = chById(st.sel.ch); if(!c || visible().indexOf(c) < 0) return null;
+    var sl = slotsFor(c);
+    for(var k = 0; k < sl.length; k++) if(sl[k].s === st.sel.s) return {c:c, s:sl[k]};
     return null;
   }
   function logo(c, cls){ return '<img class="logo" src="logos/' + c.id + '.png" alt="' + esc(c.name) + '">'; }
@@ -72,22 +73,6 @@
         if(p.classList.contains('thumb')) p.textContent = this.alt; else this.remove();
       });
     });
-  }
-
-  function detail(){
-    var sel = findSel(), n = nowSec(), el = $('detail');
-    if(!sel){ el.innerHTML = '<div><div class="d-title">Niets om te tonen</div><div class="d-desc">Kies een programma in de gids.</div></div><div class="thumb"></div>'; return; }
-    var s = sel.s, c = sel.c, on = s.s <= n && n < s.e, pct = on ? Math.round((n - s.s) / (s.e - s.s) * 100) : 0;
-    var sub = [s.g, s.st].filter(Boolean).join(' – ') || (PROV[c.prov].name + ' · ' + c.name);
-    el.innerHTML = '<div><div class="d-title">' + esc(s.t) + '</div><div class="d-sub">' + esc(sub) + '</div><div class="d-desc">' + esc(s.d || '') + '</div>'
-      + '<div class="prog"><span>' + hm(s.s) + '</span><span class="bar"><i style="width:' + pct + '%"></i></span><span>' + hm(s.e) + '</span></div>'
-      + '<div class="acts"><a class="btn go" target="_blank" rel="noopener noreferrer" href="' + esc(link(c)) + '">' + (on ? 'Kijk live' : 'Open zender') + '</a>'
-      + (safeUrl(s.u) ? '<a class="btn" target="_blank" rel="noopener noreferrer" href="' + esc(safeUrl(s.u)) + '">Kijk online</a>' : '')
-      + '<button data-act="popup" data-id="' + c.id + '">Pop-up</button><button data-act="edit" data-id="' + c.id + '">Link wijzigen</button></div></div>'
-      + (safeUrl(s.i) ? '<div class="thumb pic"><img class="pic" src="' + esc(safeUrl(s.i)) + '" alt="" referrerpolicy="no-referrer"></div>' : '<div class="thumb">' + logo(c) + '</div>');
-    fixLogos(el);
-    var pic = el.querySelector('img.pic');
-    if(pic) pic.addEventListener('error', function(){ var t = pic.parentNode; t.className = 'thumb'; t.innerHTML = logo(c); fixLogos(t); });
   }
 
   function gridView(){
@@ -128,7 +113,7 @@
     if(!items.length){ $('view').innerHTML = '<p class="empty">Geen programma\'s gevonden.</p>'; return; }
     var out = '<div class="lib">';
     items.slice(0, 250).forEach(function(i){
-      out += '<div class="item">' + (safeUrl(i.s.i) ? '<img class="th" src="' + esc(safeUrl(i.s.i)) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') + '<span class="ttl">' + esc(i.s.t) + ' <span class="t">' + (i.s.s <= n ? 'nu bezig' : hm(i.s.s)) + '</span></span><span class="tag">' + esc(i.c.name) + '</span>'
+      out += '<div class="item" data-ch="' + i.c.id + '" data-s="' + i.s.s + '">' + (safeUrl(i.s.i) ? '<img class="th" src="' + esc(safeUrl(i.s.i)) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') + '<span class="ttl">' + esc(i.s.t) + ' <span class="t">' + (i.s.s <= n ? 'nu bezig' : hm(i.s.s)) + '</span></span><span class="tag">' + esc(i.c.name) + '</span>'
         + '<a class="btn" target="_blank" rel="noopener noreferrer" href="' + esc(safeUrl(i.s.u) || link(i.c)) + '">' + (safeUrl(i.s.u) ? 'Kijk online' : 'Open live') + '</a></div>';
     });
     $('view').innerHTML = out + '</div>';
@@ -151,10 +136,9 @@
     else if(failed){ nt.textContent = 'Voorbeeldgegevens. guide.js kon niet geladen worden; controleer of het naast index.html staat.'; }
     var h = '', opts = [['all','Alle']].concat(Object.keys(PROV).map(function(x){ return [x, PROV[x].name]; }));
     opts.forEach(function(o){ h += '<button data-prov="' + o[0] + '" aria-pressed="' + (st.prov === o[0]) + '">' + o[1] + '</button>'; });
-    h += '<button data-tab="guide" aria-pressed="' + (st.tab === 'guide') + '">Gids</button><button data-tab="lib" aria-pressed="' + (st.tab === 'lib') + '">Bibliotheek</button>';
+    h += '<button data-tab="guide" aria-pressed="' + (st.tab === 'guide') + '">Gids</button><button data-tab="lib" aria-pressed="' + (st.tab === 'lib') + '">Bibliotheek</button><button data-tab="mylist" aria-pressed="' + (st.tab === 'mylist') + '">Mijn lijst' + (mylist.length ? ' (' + mylist.length + ')' : '') + '</button>';
     $('chips').innerHTML = h;
-    detail();
-    if(st.tab === 'guide') gridView(); else libraryView();
+    if(st.tab === 'guide') gridView(); else if(st.tab === 'lib') libraryView(); else myListView();
   }
 
   function loadGuide(){
@@ -166,39 +150,148 @@
   }
 
   document.addEventListener('click', function(e){
-    if(e.target.closest('#vault')) return;
+    if(e.target.closest('#vault') || e.target.closest('#pop')) return;
+    var it = e.target.closest('.item');
+    if(it && !e.target.closest('a, button')){ openFromItem(it); return; }
     var el = e.target.closest('button, .chl'); if(!el) return;
     var ds = el.dataset;
-    if(el.classList.contains('blk')){ st.sel = {ch:ds.ch, s:+ds.s}; render(); }
+    if(el.classList.contains('blk')){ var bc = chById(ds.ch); openPop(bc, findSlot(bc, +ds.s), el); }
     else if(el.classList.contains('chl')){
       var c = chById(ds.ch), sl = slotsFor(c), p = pos(sl, nowSec()), i = p.cur >= 0 ? p.cur : p.nxt;
-      if(i >= 0){ st.sel = {ch:c.id, s:sl[i].s}; render(); }
+      if(i >= 0) openPop(c, sl[i], el);
     }
     else if(ds.prov){ st.prov = ds.prov; render(); }
     else if(ds.tab){ st.tab = ds.tab; render(); }
     else if(el.id === 'dprev'){ st.day--; st.recenter = true; render(); }
     else if(el.id === 'dnext'){ st.day++; st.recenter = true; render(); }
-    else if(el.id === 'vaultbtn'){ var sl0 = findSel(); openVault(sl0 ? sl0.c.prov : null); }
-    else if(el.id === 'nowbtn'){ st.day = 0; st.tab = 'guide'; st.recenter = true; st.sel = null; render(); }
-    else if(ds.act){
-      if(ds.act === 'vault'){ openVault(ds.id); return; }
-      var ch = chById(ds.id);
-      if(ds.act === 'popup'){
-        var w = null;
-        try{ w = window.open(link(ch), 'betv_popup', 'popup=yes,width=1100,height=700'); }catch(err){}
-        if(!w) window.open(link(ch), '_blank', 'noopener');
-      } else {
-        var v = prompt('Live link voor ' + ch.name + ' (laat leeg om te herstellen)', link(ch));
-        if(v === null) return;
-        v = v.trim();
-        if(!v){ delete custom[ch.id]; }
-        else { try{ var u = new URL(v); if(u.protocol === 'https:' || u.protocol === 'http:'){ custom[ch.id] = u.href; } else { alert('Gebruik een https://-adres.'); return; } }catch(err){ alert('Dat is geen geldig adres.'); return; } }
-        try{ localStorage.setItem(KEY, JSON.stringify(custom)); }catch(err){}
-        render();
-      }
-    }
+    else if(el.id === 'vaultbtn'){ openVault(null); }
+    else if(el.id === 'nowbtn'){ st.day = 0; st.tab = 'guide'; st.recenter = true; render(); }
+    else if(ds.mlDel){ mylist = mylist.filter(function(x){ return x.k !== ds.mlDel; }); saveList(); render(); }
   });
   $('q').addEventListener('input', function(){ st.q = this.value; st.tab = st.q.trim() ? 'lib' : 'guide'; if(st.tab === 'guide') st.recenter = false; render(); });
+
+  // ---- Programme popup, "Mijn lijst" and the list view ----------------------------
+  var HOME = {vrt:'https://www.vrt.be/vrtmax/', dpg:'https://www.vtmgo.be/', play:'https://www.play.tv/'};
+  var LKEY = 'betv-mylist-v1', mylist = [], pop = {isOpen:false, c:null, s:null, opener:null};
+  try{ mylist = JSON.parse(localStorage.getItem(LKEY) || '[]') || []; }catch(e){}
+  var ICON = {
+    play:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.2 4.9v14.2c0 .7.8 1.1 1.4.7l11-7.1c.5-.3.5-1.1 0-1.4l-11-7.1c-.6-.4-1.4 0-1.4.7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
+    plus:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+    check:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    info:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.3" fill="currentColor"/></svg>',
+    close:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>'
+  };
+
+  function lkey(chId, title){ return chId + '|' + String(title).trim().toLowerCase(); }
+  function inList(chId, title){ var k = lkey(chId, title); return mylist.some(function(x){ return x.k === k; }); }
+  function saveList(){ try{ localStorage.setItem(LKEY, JSON.stringify(mylist)); }catch(e){} }
+  function toggleList(c, s){
+    var k = lkey(c.id, s.t);
+    if(inList(c.id, s.t)) mylist = mylist.filter(function(x){ return x.k !== k; });
+    else mylist.push({k:k, ch:c.id, t:s.t, i:safeUrl(s.i), u:safeUrl(s.u), g:s.g || ''});
+    saveList();
+  }
+  function dayLabel(ts){
+    var d = new Date(ts * 1000), mid = Math.floor(new Date(d.getFullYear(), d.getMonth(), d.getDate()) / 1000);
+    var diff = Math.round((mid - bounds(0)[0]) / 86400);
+    return diff === 0 ? 'Vandaag' : diff === 1 ? 'Morgen' : diff === -1 ? 'Gisteren' : d.toLocaleDateString('nl-BE', {weekday:'short', day:'numeric', month:'short'});
+  }
+  function findSlot(c, start){ var sl = slotsFor(c); for(var k = 0; k < sl.length; k++) if(sl[k].s === start) return sl[k]; return null; }
+
+  function popHtml(c, s){
+    var n = nowSec(), on = !!(s.s && s.s <= n && n < s.e), img = safeUrl(s.i), saved = inList(c.id, s.t);
+    var when = s.s ? dayLabel(s.s) + ' ' + hm(s.s) + ' – ' + hm(s.e) : 'Niet in de gids van vandaag';
+    var meta = [s.g, c.name].filter(Boolean).map(esc).join(' <span class="dot">·</span> ');
+    var pct = on ? Math.max(0, Math.min(100, Math.round((n - s.s) / (s.e - s.s) * 100))) : 0;
+    var prog = safeUrl(s.u) || HOME[c.prov] || link(c);
+    return '<div class="pop-hero">' + (img ? '<img class="pic" src="' + esc(img) + '" alt="" referrerpolicy="no-referrer">' : '<div class="nopic">' + logo(c) + '</div>') + '</div>'
+      + '<button class="pop-x" data-p="close" aria-label="Sluiten">' + ICON.close + '</button>'
+      + '<div class="pop-body"><div class="pop-when">' + esc(when) + '</div><h2 class="pop-title" id="pop-title">' + esc(s.t) + '</h2>'
+      + '<div class="pop-meta">' + meta + '</div>'
+      + (s.st ? '<div class="pop-sub">' + esc(s.st) + '</div>' : '')
+      + (on ? '<div class="pop-bar"><i style="width:' + pct + '%"></i></div>' : '')
+      + (s.d ? '<p class="pop-desc">' + esc(s.d) + '</p>' : '')
+      + '<a class="pbtn go" target="_blank" rel="noopener noreferrer" href="' + esc(link(c)) + '">' + ICON.play + (on ? 'Kijk live' : 'Open zender') + '</a>'
+      + '<div class="prow"><button class="pbtn" data-p="list" aria-pressed="' + saved + '">' + (saved ? ICON.check : ICON.plus) + 'Mijn lijst</button>'
+      + '<a class="pbtn" target="_blank" rel="noopener noreferrer" href="' + esc(prog) + '">' + ICON.info + 'Naar programma</a></div></div>';
+  }
+  function markSel(){
+    Array.prototype.forEach.call(document.querySelectorAll('.blk.sel, .chl.sel'), function(x){ x.classList.remove('sel'); });
+    if(!st.sel) return;
+    var b = document.querySelector('.blk[data-ch="' + st.sel.ch + '"][data-s="' + st.sel.s + '"]'); if(b) b.classList.add('sel');
+    var l = document.querySelector('.chl[data-ch="' + st.sel.ch + '"]'); if(l) l.classList.add('sel');
+  }
+  function openPop(c, s, opener){
+    if(!c || !s) return;
+    var el = $('pop');
+    pop.c = c; pop.s = s; pop.opener = opener || null; pop.isOpen = true;
+    $('popcard').innerHTML = popHtml(c, s);
+    fixLogos(el);
+    var pic = el.querySelector('img.pic');
+    if(pic) pic.addEventListener('error', function(){ var h = pic.parentNode; h.innerHTML = '<div class="nopic">' + logo(c) + '</div>'; fixLogos(h); });
+    st.sel = s.s ? {ch:c.id, s:s.s} : null; markSel();
+    el.classList.add('show');
+    void el.offsetWidth;
+    requestAnimationFrame(function(){ el.classList.add('open'); });
+    document.documentElement.classList.add('noscroll');
+    setTimeout(function(){ var x = el.querySelector('[data-p="close"]'); if(x && pop.isOpen) x.focus(); }, 40);
+  }
+  function closePop(){
+    if(!pop.isOpen) return;
+    pop.isOpen = false;
+    var el = $('pop');
+    el.classList.remove('open');
+    setTimeout(function(){ if(!pop.isOpen){ el.classList.remove('show'); $('popcard').innerHTML = ''; } }, 260);
+    document.documentElement.classList.remove('noscroll');
+    st.sel = null; markSel();
+    if(pop.opener && document.contains(pop.opener) && pop.opener.focus) pop.opener.focus();
+  }
+  function openFromItem(it){
+    if(it.dataset.ml){
+      var x = mylist.filter(function(m){ return m.k === it.dataset.ml; })[0]; if(!x) return;
+      var c = chById(x.ch), n = nowSec(), next = null;
+      slotsFor(c).forEach(function(s){ if(!next && s.e > n && s.t.trim().toLowerCase() === x.t.trim().toLowerCase()) next = s; });
+      openPop(c, next || {t:x.t, i:x.i, u:x.u, g:x.g}, it);
+    } else if(it.dataset.ch){
+      var ch = chById(it.dataset.ch); openPop(ch, findSlot(ch, +it.dataset.s), it);
+    }
+  }
+  function myListView(){
+    var n = nowSec(), out = '';
+    if(!mylist.length){ $('view').innerHTML = '<p class="empty">Je lijst is nog leeg. Klik op een programma en kies Mijn lijst.</p>'; return; }
+    mylist.forEach(function(x){
+      var c = chById(x.ch); if(!c) return;
+      var next = null;
+      slotsFor(c).forEach(function(s){ if(!next && s.e > n && s.t.trim().toLowerCase() === x.t.trim().toLowerCase()) next = s; });
+      var when = next ? (next.s <= n ? 'nu bezig' : dayLabel(next.s) + ' ' + hm(next.s)) : 'geen uitzending gepland';
+      out += '<div class="item" data-ml="' + esc(x.k) + '">' + (safeUrl(x.i) ? '<img class="th" src="' + esc(safeUrl(x.i)) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '')
+        + '<span class="ttl">' + esc(x.t) + ' <span class="t">' + esc(when) + '</span></span><span class="tag">' + esc(c.name) + '</span>'
+        + '<button data-ml-del="' + esc(x.k) + '">Verwijder</button></div>';
+    });
+    $('view').innerHTML = '<div class="lib">' + out + '</div>';
+    Array.prototype.forEach.call($('view').querySelectorAll('img.th'), function(im){ im.addEventListener('error', function(){ im.remove(); }); });
+  }
+
+  $('pop').addEventListener('click', function(e){
+    var t = e.target;
+    if(t.closest('[data-p="close"]') || t.classList.contains('pop-bg') || t.id === 'pop'){ closePop(); return; }
+    var b = t.closest('[data-p="list"]');
+    if(b && pop.c){
+      toggleList(pop.c, pop.s);
+      var on = inList(pop.c.id, pop.s.t);
+      b.setAttribute('aria-pressed', on); b.innerHTML = (on ? ICON.check : ICON.plus) + 'Mijn lijst';
+      if(st.tab === 'mylist') render();
+    }
+  });
+  document.addEventListener('keydown', function(e){
+    if(!pop.isOpen) return;
+    if(e.key === 'Escape'){ closePop(); }
+    else if(e.key === 'Tab'){
+      var f = $('popcard').querySelectorAll('a[href], button'); if(!f.length) return;
+      if(e.shiftKey && document.activeElement === f[0]){ e.preventDefault(); f[f.length - 1].focus(); }
+      else if(!e.shiftKey && document.activeElement === f[f.length - 1]){ e.preventDefault(); f[0].focus(); }
+    }
+  });
 
   // ---- Accounts: logins kept in an encrypted vault on this device ------------------
   var VKEY = 'betv-vault-v1', VAAD = 'betv-vault-v1', ITER = 600000;

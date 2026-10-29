@@ -21,7 +21,7 @@ for (const m of xml.matchAll(/<programme\s+([^>]*)>([\s\S]*?)<\/programme>/g)) {
   if (!id || !s || !e) continue
   const p = { s, e, t: tag(m[2], 'title') }
   const st = tag(m[2], 'sub-title'); if (st) p.st = st
-  const d = tag(m[2], 'desc'); if (d) p.d = d.slice(0, 160)
+  const d = tag(m[2], 'desc'); if (d) p.d = d.slice(0, 400)
   const g = tag(m[2], 'category'); if (g) p.g = g
   // Programme images come as <image ...>URL</image> (preferring landscape), or as <icon src="URL"/>.
   const imgs = [...m[2].matchAll(/<image([^>]*)>([^<]+)<\/image>/g)]
