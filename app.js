@@ -120,6 +120,12 @@
     Array.prototype.forEach.call($('view').querySelectorAll('img.th'), function(im){ im.addEventListener('error', function(){ im.remove(); }); });
   }
 
+  function syncRail(){
+    Array.prototype.forEach.call(document.querySelectorAll('#rail [data-prov]'), function(b){ var on = b.dataset.prov === st.prov; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
+    Array.prototype.forEach.call(document.querySelectorAll('#rail [data-tab]'), function(b){ var on = b.dataset.tab === st.tab; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
+    var bd = $('mlbadge'); bd.textContent = mylist.length; bd.hidden = !mylist.length;
+  }
+
   function render(){
     var d = new Date(), n = nowSec(), md = maxDay();
     $('clock').textContent = hm(n);
@@ -134,10 +140,7 @@
       nt.textContent = 'Gids bijgewerkt op ' + new Date(guide.updated).toLocaleString('nl-BE', {weekday:'short', hour:'2-digit', minute:'2-digit'}) + (age > 30 ? '. Dat is meer dan een dag geleden, de gidstaak is mogelijk gestopt.' : '.');
     } else if(guide){ nt.textContent = 'Voorbeeldgegevens. De echte programma\'s verschijnen zodra de gidstaak voor het eerst gelopen heeft.'; }
     else if(failed){ nt.textContent = 'Voorbeeldgegevens. guide.js kon niet geladen worden; controleer of het naast index.html staat.'; }
-    var h = '', opts = [['all','Alle']].concat(Object.keys(PROV).map(function(x){ return [x, PROV[x].name]; }));
-    opts.forEach(function(o){ h += '<button data-prov="' + o[0] + '" aria-pressed="' + (st.prov === o[0]) + '">' + o[1] + '</button>'; });
-    h += '<button data-tab="guide" aria-pressed="' + (st.tab === 'guide') + '">Gids</button><button data-tab="lib" aria-pressed="' + (st.tab === 'lib') + '">Bibliotheek</button><button data-tab="mylist" aria-pressed="' + (st.tab === 'mylist') + '">Mijn lijst' + (mylist.length ? ' (' + mylist.length + ')' : '') + '</button>';
-    $('chips').innerHTML = h;
+    syncRail();
     if(st.tab === 'guide') gridView(); else if(st.tab === 'lib') libraryView(); else myListView();
   }
 
@@ -155,6 +158,7 @@
     if(it && !e.target.closest('a, button')){ openFromItem(it); return; }
     var el = e.target.closest('button, .chl'); if(!el) return;
     var ds = el.dataset;
+    if(el.closest('#rail')) $('rail').classList.remove('open');
     if(el.classList.contains('blk')){ var bc = chById(ds.ch); openPop(bc, findSlot(bc, +ds.s), el); }
     else if(el.classList.contains('chl')){
       var c = chById(ds.ch), sl = slotsFor(c), p = pos(sl, nowSec()), i = p.cur >= 0 ? p.cur : p.nxt;
@@ -277,7 +281,7 @@
     if(t.closest('[data-p="close"]') || t.classList.contains('pop-bg') || t.id === 'pop'){ closePop(); return; }
     var b = t.closest('[data-p="list"]');
     if(b && pop.c){
-      toggleList(pop.c, pop.s);
+      toggleList(pop.c, pop.s); syncRail();
       var on = inList(pop.c.id, pop.s.t);
       b.setAttribute('aria-pressed', on); b.innerHTML = (on ? ICON.check : ICON.plus) + 'Mijn lijst';
       if(st.tab === 'mylist') render();
@@ -463,6 +467,13 @@
     if(document.hidden && vault.key){ vault.hideTimer = setTimeout(lockVault, 5 * 60 * 1000); } else { clearTimeout(vault.hideTimer); }
   });
 
+  (function(){
+    var rail = $('rail');
+    if(window.matchMedia && matchMedia('(hover: none)').matches){
+      rail.addEventListener('click', function(e){ if(!rail.classList.contains('open')){ e.preventDefault(); e.stopPropagation(); rail.classList.add('open'); } }, true);
+      document.addEventListener('click', function(e){ if(!e.target.closest('#rail')) rail.classList.remove('open'); });
+    }
+  })();
   render();
   loadGuide();
   setInterval(function(){ if(document.activeElement !== $('q')) render(); }, 30000);
