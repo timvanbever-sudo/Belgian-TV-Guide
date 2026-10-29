@@ -36,7 +36,7 @@ function toProgramme (b) {
   const s = Math.floor(Number(b.from) / 1000), e = Math.floor(Number(b.to) / 1000)
   if (!b.title || b.title === 'Geen uitzending' || !(s > 0) || !(e > s)) return null
   const p = { s, e, t: String(b.title) }
-  if (b.synopsis) p.d = String(b.synopsis).slice(0, 160)
+  if (b.synopsis) p.d = String(b.synopsis).slice(0, 400)
   const st = b.episodeTitle || b.subtitle || b.subTitle || b.episodeName; if (typeof st === 'string' && st) p.st = st
   const g = nameOf(b.subGenres && b.subGenres[0]) || nameOf(b.genre) || nameOf(b.genres && b.genres[0]) || nameOf(b.category); if (g) p.g = String(g)
   const i = urlOf(b.imageUrl) || urlOf(b.image) || urlOf(b.images) || urlOf(b.thumbnail) || urlOf(b.poster) || urlOf(b.imageUrls); if (i) p.i = i

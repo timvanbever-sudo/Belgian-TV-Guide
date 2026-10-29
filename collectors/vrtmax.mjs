@@ -141,7 +141,7 @@ function toProgrammes (tiles, date) {
     if (seen.has(key)) continue
     seen.add(key)
     const p = { s: st.s, e: st.e || st.s + (durationOf(t) || 0), t: t.title }
-    if (t.description) p.d = String(t.description).slice(0, 160)
+    if (t.description) p.d = String(t.description).slice(0, 400)
     const i = imageOf(t); if (i) p.i = i
     const link = t.action?.link; if (t.available && link) p.u = link.startsWith('http') ? link : WWW + link
     list.push(p)
@@ -162,6 +162,10 @@ function tidy (list) {
 
 // ---- main ------------------------------------------------------------------
 const brusselsDate = ts => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Brussels' }).format(new Date(ts))
+if (!process.env.VRT_EMAIL || !process.env.VRT_PASSWORD) {
+  console.log('VRT MAX: skipped, the VRT_EMAIL and VRT_PASSWORD secrets are not set (the guide uses the public data instead)')
+  process.exit(0)
+}
 try {
   const token = await signIn()
   console.log('VRT sign-in: ok')
